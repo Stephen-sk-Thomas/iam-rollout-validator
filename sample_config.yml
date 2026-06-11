@@ -27,7 +27,7 @@ groups:
 assignments:
   # Which groups are allowed to use each app (common rollout mistake: wrong group here)
   - app: jira
-    groups: [engineering]
+    groups: [engineers]
 
   - app: finance_portal
     groups: [finance]
