@@ -115,18 +115,58 @@ def validate(cfg):
 
 def main():
     parser = argparse.ArgumentParser(description="Validate an IAM rollout YAML config.")
-    parser.add_argument("config", help="Path to YAML config (e.g., sample_config.yml)")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    p_validate = sub.add_parser("validate", help="Validate the config")
+    p_validate.add_argument("config", help="Path to YAML config (e.g., sample_config.yml)")
+
+    p_explain = sub.add_parser("explain", help="Explain an app/group issue quickly")
+    p_explain.add_argument("config", help="Path to YAML config")
+    p_explain.add_argument("app", help="App id (e.g., jira)")
+    p_explain.add_argument("group", help="Group id to check (e.g., engineers)")
+
     args = parser.parse_args()
 
     cfg = load_config(args.config)
-    problems = validate(cfg)
 
-    if not problems:
-        print("OK: no issues found")
+    if args.cmd == "validate":
+        problems = validate(cfg)
+        if not problems:
+            print("OK: no issues found")
+            return
+        for line in problems:
+            print(line)
         return
 
-    for line in problems:
-        print(line)
+    # explain mode (simple):
+    apps = index_by_id(cfg.get("apps"), "apps")
+    groups = index_by_id(cfg.get("groups"), "groups")
+    assignments = cfg.get("assignments", [])
+
+    if args.app not in apps:
+        print(f"Unknown app: {args.app}")
+        return
+
+    if args.group not in groups:
+        print(f"Unknown group: {args.group}")
+        return
+
+    assigned_groups = None
+    for a in assignments:
+        if isinstance(a, dict) and a.get("app") == args.app:
+            assigned_groups = a.get("groups", [])
+            break
+
+    if assigned_groups is None:
+        print(f"App '{args.app}' has no assignment, so nobody can access it.")
+        return
+
+    if args.group in assigned_groups:
+        print(f"Group '{args.group}' IS assigned to app '{args.app}'.")
+    else:
+        print(f"Group '{args.group}' is NOT assigned to app '{args.app}'.")
+        print(f"Assigned groups: {assigned_groups}")
+
 
 
 if __name__ == "__main__":
