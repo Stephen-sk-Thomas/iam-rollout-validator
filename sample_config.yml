@@ -1,0 +1,46 @@
+# sample_config.yml
+# This is a tiny, fake IAM rollout config used to demo the validator.
+# It represents the kind of decisions you made in an Okta SSO rollout:
+# apps + groups + which groups get access + simple sign-on rules.
+
+apps:
+  - id: jira
+    name: Jira
+    saml: true
+    sensitive: false
+
+  - id: finance_portal
+    name: Finance Portal
+    saml: true
+    sensitive: true
+
+groups:
+  - id: everyone
+    description: All employees
+
+  - id: engineering
+    description: Engineering department users
+
+  - id: finance
+    description: Finance department users
+
+assignments:
+  # Which groups are allowed to use each app (common rollout mistake: wrong group here)
+  - app: jira
+    groups: [engineering]
+
+  - app: finance_portal
+    groups: [finance]
+
+policies:
+  # Policies are evaluated top-to-bottom.
+  # Common rollout mistake: a broad allow rule above a more specific deny/MFA rule.
+  - name: Finance Portal requires MFA
+    app: finance_portal
+    rule:
+      require_mfa: true
+
+  - name: Default allow for assigned users
+    app: "*"
+    rule:
+      allow_if_assigned: true
